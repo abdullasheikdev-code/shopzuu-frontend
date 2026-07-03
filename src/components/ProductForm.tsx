@@ -20,7 +20,7 @@ export default function ProductForm({ productId }: Props) {
     discountPrice: "",
     stock: "",
     categoryId: "",
-    isFeatured: false,
+    featured: false,
   });
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -40,7 +40,7 @@ export default function ProductForm({ productId }: Props) {
           discountPrice: p.discountPrice ? String(p.discountPrice) : "",
           stock: String(p.stock),
           categoryId: "",
-          isFeatured: p.isFeatured,
+          featured: p.featured,
         });
         setImages(p.images || []);
       });
@@ -88,7 +88,7 @@ export default function ProductForm({ productId }: Props) {
         stock: parseInt(form.stock),
         categoryId: parseInt(form.categoryId),
         images,
-        isFeatured: form.isFeatured,
+        featured: form.featured,
       };
 
       if (productId) {
@@ -244,9 +244,9 @@ export default function ProductForm({ productId }: Props) {
       <label className="flex items-center gap-2 text-sm text-gray-700">
         <input
           type="checkbox"
-          checked={form.isFeatured}
+          checked={form.featured}
           onChange={(e) =>
-            setForm({ ...form, isFeatured: e.target.checked })
+            setForm({ ...form, featured: e.target.checked })
           }
         />
         Request featured placement
