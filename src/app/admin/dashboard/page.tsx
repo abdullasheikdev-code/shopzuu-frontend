@@ -51,23 +51,23 @@ export default function AdminDashboardPage() {
         <StatCard
           icon={<IndianRupee className="w-5 h-5" />}
           label="Total Revenue"
-          value={`₹${data.totalPlatformRevenue.toFixed(0)}`}
+          value={`₹${data.totalPlatformRevenue.toFixed(2)}`}
           highlight
         />
         <StatCard
           icon={<IndianRupee className="w-5 h-5" />}
           label="This Month"
-          value={`₹${data.thisMonthRevenue.toFixed(0)}`}
+          value={`₹${data.thisMonthRevenue.toFixed(2)}`}
         />
         <StatCard
           icon={<IndianRupee className="w-5 h-5" />}
           label="Subscription Rev."
-          value={`₹${data.subscriptionRevenue.toFixed(0)}`}
+          value={`₹${data.subscriptionRevenue.toFixed(2)}`}
         />
         <StatCard
           icon={<IndianRupee className="w-5 h-5" />}
           label="Commission Rev."
-          value={`₹${data.commissionRevenue.toFixed(0)}`}
+          value={`₹${data.commissionRevenue.toFixed(2)}`}
         />
       </div>
 
@@ -90,7 +90,7 @@ export default function AdminDashboardPage() {
         <StatCard
           icon={<Package className="w-5 h-5" />}
           label="GMV"
-          value={`₹${data.totalGMV.toFixed(0)}`}
+          value={`₹${data.totalGMV.toFixed(2)}`}
         />
       </div>
 
@@ -117,8 +117,8 @@ export default function AdminDashboardPage() {
                     {v.shopName}
                   </td>
                   <td className="py-2">{v.plan}</td>
-                  <td className="py-2">₹{v.totalSales.toFixed(0)}</td>
-                  <td className="py-2">₹{v.commissionPaid.toFixed(0)}</td>
+                  <td className="py-2">₹{v.totalSales.toFixed(2)}</td>
+                  <td className="py-2">₹{v.commissionPaid.toFixed(2)}</td>
                   <td className="py-2">{v.totalOrders}</td>
                 </tr>
               ))}

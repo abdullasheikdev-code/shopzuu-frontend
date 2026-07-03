@@ -12,11 +12,16 @@ interface Vendor {
   status: string;
   plan: string;
   commissionRate: number;
-  user: { name: string; email: string; phone: string };
+  user: {
+    name: string;
+    email: string;
+    phone: string;
+  };
 }
 
 export default function AdminVendorsPage() {
   const router = useRouter();
+
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [filter, setFilter] = useState<"ALL" | "PENDING">("PENDING");
   const [loading, setLoading] = useState(true);
@@ -24,28 +29,62 @@ export default function AdminVendorsPage() {
 
   useEffect(() => {
     const user = getAuthUser();
+
     if (!user || user.role !== "ADMIN") {
       router.push("/login");
       return;
     }
+
     fetchVendors();
   }, [filter]);
 
   const fetchVendors = () => {
     setLoading(true);
+
     const endpoint =
-      filter === "PENDING" ? "/admin/vendors/pending" : "/admin/vendors";
+      filter === "PENDING"
+        ? "/admin/vendors/pending"
+        : "/admin/vendors";
+
     api
       .get(endpoint)
-      .then((res) => setVendors(res.data.data))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        console.log("SUCCESS:", res.data);
+        console.log("VENDORS:", res.data?.data);
+
+        setVendors(
+          Array.isArray(res.data?.data)
+            ? res.data.data
+            : []
+        );
+      })
+      .catch((err) => {
+        console.error("ERROR STATUS:", err.response?.status);
+        console.error("ERROR DATA:", err.response?.data);
+        console.error("FULL ERROR:", err);
+
+        setVendors([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
-  const updateStatus = async (vendorId: number, status: string) => {
+  const updateStatus = async (
+    vendorId: number,
+    status: string
+  ) => {
     setUpdating(vendorId);
+
     try {
-      await api.put(`/admin/vendors/${vendorId}/status`, { status });
+      await api.put(
+        `/admin/vendors/${vendorId}/status`,
+        { status }
+      );
+
       fetchVendors();
+    } catch (err) {
+      console.error("UPDATE ERROR:", err);
     } finally {
       setUpdating(null);
     }
@@ -68,7 +107,9 @@ export default function AdminVendorsPage() {
                 : "bg-white text-gray-600 border-gray-300"
             }`}
           >
-            {f === "PENDING" ? "Pending Approval" : "All Vendors"}
+            {f === "PENDING"
+              ? "Pending Approval"
+              : "All Vendors"}
           </button>
         ))}
       </div>
@@ -87,15 +128,21 @@ export default function AdminVendorsPage() {
               className="bg-white border border-gray-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4"
             >
               <div>
-                <p className="font-semibold text-gray-900">{v.shopName}</p>
-                <p className="text-sm text-gray-500">
-                  {v.user.name} · {v.user.email} · {v.user.phone}
+                <p className="font-semibold text-gray-900">
+                  {v.shopName}
                 </p>
+
+                <p className="text-sm text-gray-500">
+                  {v.user?.name} · {v.user?.email} · {v.user?.phone}
+                </p>
+
                 <p className="text-sm text-gray-400 mt-1">
                   {v.shopDescription}
                 </p>
+
                 <span className="inline-block mt-2 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-                  {v.status} · {v.plan} plan · {v.commissionRate}% commission
+                  {v.status} · {v.plan} plan ·{" "}
+                  {v.commissionRate}% commission
                 </span>
               </div>
 
@@ -104,33 +151,44 @@ export default function AdminVendorsPage() {
                   <>
                     <button
                       disabled={updating === v.id}
-                      onClick={() => updateStatus(v.id, "APPROVED")}
+                      onClick={() =>
+                        updateStatus(v.id, "APPROVED")
+                      }
                       className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
                     >
                       Approve
                     </button>
+
                     <button
                       disabled={updating === v.id}
-                      onClick={() => updateStatus(v.id, "REJECTED")}
+                      onClick={() =>
+                        updateStatus(v.id, "REJECTED")
+                      }
                       className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700"
                     >
                       Reject
                     </button>
                   </>
                 )}
+
                 {v.status === "APPROVED" && (
                   <button
                     disabled={updating === v.id}
-                    onClick={() => updateStatus(v.id, "SUSPENDED")}
+                    onClick={() =>
+                      updateStatus(v.id, "SUSPENDED")
+                    }
                     className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300"
                   >
                     Suspend
                   </button>
                 )}
+
                 {v.status === "SUSPENDED" && (
                   <button
                     disabled={updating === v.id}
-                    onClick={() => updateStatus(v.id, "APPROVED")}
+                    onClick={() =>
+                      updateStatus(v.id, "APPROVED")
+                    }
                     className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
                   >
                     Reinstate

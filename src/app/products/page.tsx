@@ -19,17 +19,53 @@ function ProductsContent() {
   );
   const [loading, setLoading] = useState(true);
 
+
+  const [sortBy, setSortBy] = useState("newest");
+const [minPrice, setMinPrice] = useState("");
+const [maxPrice, setMaxPrice] = useState("");
+
+const applyFilters = (products: Product[]) => {
+  let filtered = [...products];
+
+  if (minPrice) filtered = filtered.filter((p) => p.price >= Number(minPrice));
+  if (maxPrice) filtered = filtered.filter((p) => p.price <= Number(maxPrice));
+
+  if (sortBy === "price_low") filtered.sort((a, b) => a.price - b.price);
+  else if (sortBy === "price_high") filtered.sort((a, b) => b.price - a.price);
+  else if (sortBy === "rating") filtered.sort((a, b) => b.rating - a.rating);
+
+  return filtered;
+};
+
   useEffect(() => {
-    api.get("/categories").then((res) => setCategories(res.data.data));
+    api
+      .get("/categories")
+      .then((res) => {
+        console.log("Categories Response:", res.data);
+
+        setCategories(
+          Array.isArray(res.data?.data)
+            ? res.data.data
+            : []
+        );
+      })
+      .catch((err) => {
+        console.error("Category Error:", err);
+        setCategories([]);
+      });
   }, []);
 
   useEffect(() => {
     setLoading(true);
+
     const fetchProducts = async () => {
       try {
         let res;
+
         if (keyword.trim()) {
-          res = await api.get(`/products/search?keyword=${keyword}`);
+          res = await api.get(
+            `/products/search?keyword=${keyword}`
+          );
         } else if (activeCategory) {
           res = await api.get(
             `/products/public/category/${activeCategory}`
@@ -37,23 +73,35 @@ function ProductsContent() {
         } else {
           res = await api.get("/products/public/all");
         }
-        setProducts(res.data.data);
+
+        setProducts(
+          Array.isArray(res.data?.data)
+            ? res.data.data
+            : []
+        );
+      } catch (err) {
+        console.error("Products Error:", err);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
     };
 
     const debounce = setTimeout(fetchProducts, 300);
+
     return () => clearTimeout(debounce);
   }, [keyword, activeCategory]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">All Products</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        All Products
+      </h1>
 
       {/* Search */}
       <div className="relative mb-6 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+
         <input
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
@@ -62,7 +110,34 @@ function ProductsContent() {
         />
       </div>
 
-      {/* Category filter chips */}
+      <div className="flex flex-wrap gap-3 items-center mb-6">
+  <input
+    type="number"
+    placeholder="Min ₹"
+    value={minPrice}
+    onChange={(e) => setMinPrice(e.target.value)}
+    className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+  />
+  <input
+    type="number"
+    placeholder="Max ₹"
+    value={maxPrice}
+    onChange={(e) => setMaxPrice(e.target.value)}
+    className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+  />
+  <select
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value)}
+    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+  >
+    <option value="newest">Newest</option>
+    <option value="price_low">Price: Low to High</option>
+    <option value="price_high">Price: High to Low</option>
+    <option value="rating">Top Rated</option>
+  </select>
+</div>
+
+      {/* Categories */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
         <button
           onClick={() => setActiveCategory(null)}
@@ -74,7 +149,8 @@ function ProductsContent() {
         >
           All
         </button>
-        {categories.map((cat) => (
+
+        {(categories ?? []).map((cat) => (
           <button
             key={cat.id}
             onClick={() => setActiveCategory(String(cat.id))}
@@ -90,13 +166,20 @@ function ProductsContent() {
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Loading products...</p>
+        <p className="text-gray-500">
+          Loading products...
+        </p>
       ) : products.length === 0 ? (
-        <p className="text-gray-500">No products found.</p>
+        <p className="text-gray-500">
+          No products found.
+        </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard
+              key={p.id}
+              product={p}
+            />
           ))}
         </div>
       )}

@@ -9,8 +9,8 @@ export interface Product {
   categoryName: string;
   vendorShopName: string;
   vendorId: number;
-  isFeatured: boolean;
-  isActive: boolean;
+  featured: boolean;
+  active: boolean;
   totalSold: number;
   rating: number;
   createdAt: string;
@@ -59,6 +59,12 @@ export interface Order {
   status: string;
   paymentStatus: string;
   shippingAddress: string;
+  // Shipment Tracking
+  courierName: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
   createdAt: string;
 }
 

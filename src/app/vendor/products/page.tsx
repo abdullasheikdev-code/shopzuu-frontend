@@ -6,13 +6,14 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { Product } from "@/lib/types";
 import { getAuthUser } from "@/lib/auth";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Star } from "lucide-react";
 
 export default function VendorProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   useEffect(() => {
     const user = getAuthUser();
@@ -39,6 +40,21 @@ export default function VendorProductsPage() {
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleToggleFeatured = async (id: number) => {
+    setTogglingId(id);
+    try {
+      const res = await api.put(`/vendor/products/${id}/toggle-featured`);
+      const updated = res.data.data;
+      setProducts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, isFeatured: updated.isFeatured } : p))
+      );
+    } catch (err) {
+      alert("Failed to toggle featured status");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -79,6 +95,7 @@ export default function VendorProductsPage() {
                 <th className="px-4 py-3">Stock</th>
                 <th className="px-4 py-3">Sold</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Featured</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -110,13 +127,35 @@ export default function VendorProductsPage() {
                   <td className="px-4 py-3">
                     <span
                       className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        p.isActive
+                        p.active
                           ? "bg-green-100 text-green-700"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {p.isActive ? "Active" : "Inactive"}
+                      {p.active ? "Active" : "Inactive"}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      disabled={togglingId === p.id}
+                      onClick={() => handleToggleFeatured(p.id)}
+                      className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium transition-colors disabled:opacity-50 ${
+                        p.featured
+                          ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}
+                    >
+                      <Star
+                        className={`w-3.5 h-3.5 ${
+                          p.featured ? "fill-yellow-500 text-yellow-500" : ""
+                        }`}
+                      />
+                      {togglingId === p.id
+                        ? "..."
+                        : p.featured
+                        ? "Featured"
+                        : "Not Featured"}
+                    </button>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">

@@ -104,12 +104,12 @@ export default function VendorDashboardPage() {
         <StatCard
           icon={<IndianRupee className="w-5 h-5" />}
           label="Total Earnings"
-          value={`₹${data.totalEarnings.toFixed(0)}`}
+          value={`₹${data.totalEarnings.toFixed(2)}`}
         />
         <StatCard
           icon={<TrendingUp className="w-5 h-5" />}
           label="This Month"
-          value={`₹${data.thisMonthEarnings.toFixed(0)}`}
+          value={`₹${data.thisMonthEarnings.toFixed(2)}`}
         />
         <StatCard
           icon={<Package className="w-5 h-5" />}
@@ -144,7 +144,7 @@ export default function VendorDashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-medium text-gray-900">
-                      ₹{o.amount.toFixed(0)}
+                      ₹{o.amount.toFixed(2)}
                     </p>
                     <p className="text-gray-500 text-xs">{o.status}</p>
                   </div>
@@ -171,7 +171,7 @@ export default function VendorDashboardPage() {
                   </p>
                   <div className="text-right">
                     <p className="font-medium text-gray-900">
-                      ₹{p.revenue.toFixed(0)}
+                      ₹{p.revenue.toFixed(2)}
                     </p>
                     <p className="text-gray-500 text-xs">
                       {p.totalSold} sold
