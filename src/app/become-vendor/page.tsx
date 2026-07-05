@@ -39,7 +39,7 @@ export default function BecomeVendorPage() {
     <div>
       <section className="bg-gray-900 text-white text-center py-16 px-4">
         <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-          Open your store on ShopFlow
+          Open your store on Shopzuu and reach millions of buyers
         </h1>
         <p className="text-gray-300 max-w-xl mx-auto mb-8">
           Reach buyers across India with low commission, fast payouts, and
