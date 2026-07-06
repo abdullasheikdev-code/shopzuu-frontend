@@ -1,8 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import api from "@/lib/api";
 import { Product, Category } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 import {
@@ -19,76 +15,88 @@ import {
   Truck,
 } from "lucide-react";
 
-export default function HomePage() {
-  const [featured, setFeatured] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
 
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
+async function getCategories(): Promise<Category[]> {
+  if (!API_URL) {
+    console.error("NEXT_PUBLIC_API_URL is missing");
+    return [];
+  }
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      // 1. Show cached categories immediately after browser mount.
-      // This avoids hydration mismatch.
-      try {
-        const cached = localStorage.getItem("shopzuu_categories");
+  try {
+    const response = await fetch(`${API_URL}/categories`, {
+      next: {
+        revalidate: 300,
+        tags: ["homepage-categories"],
+      },
+    });
 
-        if (cached) {
-          const parsed = JSON.parse(cached);
+    if (!response.ok) {
+      console.error(
+        "CATEGORY FETCH FAILED:",
+        response.status,
+        response.statusText
+      );
 
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setCategories(parsed);
-            setCategoriesLoading(false);
-          }
-        }
-      } catch (err) {
-        console.error("CATEGORY CACHE ERROR:", err);
+      return [];
+    }
+
+    const result = await response.json();
+
+    return Array.isArray(result?.data)
+      ? result.data
+      : [];
+  } catch (error) {
+    console.error("CATEGORY FETCH ERROR:", error);
+
+    return [];
+  }
+}
+
+async function getFeaturedProducts(): Promise<Product[]> {
+  if (!API_URL) {
+    console.error("NEXT_PUBLIC_API_URL is missing");
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `${API_URL}/products/featured`,
+      {
+        next: {
+          revalidate: 300,
+          tags: ["homepage-featured"],
+        },
       }
+    );
 
-      // 2. Refresh categories from backend in background.
-      try {
-        const catRes = await api.get("/categories");
+    if (!response.ok) {
+      console.error(
+        "FEATURED FETCH FAILED:",
+        response.status,
+        response.statusText
+      );
 
-        const freshCategories = Array.isArray(catRes.data?.data)
-          ? catRes.data.data
-          : [];
+      return [];
+    }
 
-        if (freshCategories.length > 0) {
-          setCategories(freshCategories);
+    const result = await response.json();
 
-          localStorage.setItem(
-            "shopzuu_categories",
-            JSON.stringify(freshCategories)
-          );
-        }
-      } catch (err) {
-        console.error("CATEGORY ERROR:", err);
-      } finally {
-        setCategoriesLoading(false);
-      }
-    };
+    return Array.isArray(result?.data)
+      ? result.data
+      : [];
+  } catch (error) {
+    console.error("FEATURED FETCH ERROR:", error);
 
-    const fetchFeatured = async () => {
-      try {
-        const featuredRes = await api.get("/products/featured");
+    return [];
+  }
+}
 
-        setFeatured(
-          Array.isArray(featuredRes.data?.data)
-            ? featuredRes.data.data
-            : []
-        );
-      } catch (err) {
-        console.error("FEATURED ERROR:", err);
-        setFeatured([]);
-      } finally {
-        setFeaturedLoading(false);
-      }
-    };
-
-    // Both run independently.
-    fetchCategories();
-    fetchFeatured();
-  }, []);
+export default async function HomePage() {
+  const [categories, featured] = await Promise.all([
+    getCategories(),
+    getFeaturedProducts(),
+  ]);
 
   return (
     <main className="overflow-hidden bg-white">
@@ -96,7 +104,9 @@ export default function HomePage() {
       <section className="relative overflow-hidden bg-[#0b1020] text-white">
         {/* Background decorations */}
         <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-indigo-600/25 blur-[120px]" />
+
         <div className="absolute -right-32 -top-20 h-[500px] w-[500px] rounded-full bg-fuchsia-500/20 blur-[140px]" />
+
         <div className="absolute bottom-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-violet-500/10 blur-[100px]" />
 
         <div className="relative mx-auto grid min-h-[610px] max-w-[1440px] items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8 lg:py-24">
@@ -109,6 +119,7 @@ export default function HomePage() {
 
             <h1 className="text-5xl font-black leading-[1.02] tracking-[-0.045em] sm:text-6xl lg:text-[72px]">
               Shop different.
+
               <span className="mt-2 block bg-gradient-to-r from-indigo-300 via-violet-300 to-pink-300 bg-clip-text text-transparent">
                 Support real sellers.
               </span>
@@ -126,6 +137,7 @@ export default function HomePage() {
                 className="group flex h-14 items-center gap-2 rounded-full bg-white px-7 text-sm font-extrabold text-gray-950 shadow-[0_15px_40px_rgba(255,255,255,0.15)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(255,255,255,0.22)]"
               >
                 Start Shopping
+
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
 
@@ -182,7 +194,9 @@ export default function HomePage() {
                   <div className="rounded-3xl bg-gradient-to-br from-indigo-500/30 to-indigo-500/10 p-5">
                     <PackageCheck className="mb-10 h-7 w-7 text-indigo-300" />
 
-                    <p className="font-bold">Quality Products</p>
+                    <p className="font-bold">
+                      Quality Products
+                    </p>
 
                     <p className="mt-1 text-xs text-slate-400">
                       From growing sellers
@@ -192,7 +206,9 @@ export default function HomePage() {
                   <div className="mt-7 rounded-3xl bg-gradient-to-br from-pink-500/30 to-pink-500/10 p-5">
                     <BadgePercent className="mb-10 h-7 w-7 text-pink-300" />
 
-                    <p className="font-bold">Fair Prices</p>
+                    <p className="font-bold">
+                      Fair Prices
+                    </p>
 
                     <p className="mt-1 text-xs text-slate-400">
                       Better value for you
@@ -271,20 +287,12 @@ export default function HomePage() {
               className="hidden items-center gap-2 text-sm font-bold text-gray-700 transition-colors hover:text-indigo-600 sm:flex"
             >
               Explore all
+
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          {categoriesLoading && categories.length === 0 ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-36 animate-pulse rounded-3xl bg-gray-200"
-                />
-              ))}
-            </div>
-          ) : categories.length === 0 ? (
+          {categories.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center text-gray-500">
               Categories will appear here soon.
             </div>
@@ -358,17 +366,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {featuredLoading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i}>
-                  <div className="aspect-square animate-pulse rounded-[28px] bg-gray-100" />
-                  <div className="mt-4 h-4 w-3/4 animate-pulse rounded bg-gray-100" />
-                  <div className="mt-3 h-4 w-1/3 animate-pulse rounded bg-gray-100" />
-                </div>
-              ))}
-            </div>
-          ) : featured.length === 0 ? (
+          {featured.length === 0 ? (
             <div className="rounded-[32px] border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
                 <ShoppingBag className="h-6 w-6 text-gray-400" />
@@ -399,6 +397,7 @@ export default function HomePage() {
       <section className="px-4 pb-20 pt-4 sm:px-6 sm:pb-24">
         <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[36px] bg-[#101525] px-6 py-14 text-white shadow-2xl sm:px-12 sm:py-16 lg:px-16">
           <div className="absolute -right-20 -top-24 h-80 w-80 rounded-full bg-indigo-600/30 blur-[100px]" />
+
           <div className="absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-pink-500/20 blur-[100px]" />
 
           <div className="relative flex flex-col items-start justify-between gap-10 lg:flex-row lg:items-center">
@@ -410,6 +409,7 @@ export default function HomePage() {
 
               <h2 className="text-3xl font-black tracking-tight sm:text-5xl">
                 Your products deserve
+
                 <span className="block text-indigo-300">
                   a bigger audience.
                 </span>
@@ -426,6 +426,7 @@ export default function HomePage() {
               className="group flex h-14 shrink-0 items-center gap-2 rounded-full bg-white px-7 text-sm font-extrabold text-gray-950 shadow-xl transition-all duration-300 hover:-translate-y-1"
             >
               Become a Vendor
+
               <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
           </div>
