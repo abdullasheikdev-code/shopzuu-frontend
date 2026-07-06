@@ -22,52 +22,86 @@ import {
 export default function HomePage() {
   const [featured, setFeatured] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.get("/products/featured"),
-      api.get("/categories"),
-    ])
-      .then(([featuredRes, catRes]) => {
+    const fetchCategories = async () => {
+      // 1. Show cached categories immediately after browser mount.
+      // This avoids hydration mismatch.
+      try {
+        const cached = localStorage.getItem("shopzuu_categories");
+
+        if (cached) {
+          const parsed = JSON.parse(cached);
+
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCategories(parsed);
+            setCategoriesLoading(false);
+          }
+        }
+      } catch (err) {
+        console.error("CATEGORY CACHE ERROR:", err);
+      }
+
+      // 2. Refresh categories from backend in background.
+      try {
+        const catRes = await api.get("/categories");
+
+        const freshCategories = Array.isArray(catRes.data?.data)
+          ? catRes.data.data
+          : [];
+
+        if (freshCategories.length > 0) {
+          setCategories(freshCategories);
+
+          localStorage.setItem(
+            "shopzuu_categories",
+            JSON.stringify(freshCategories)
+          );
+        }
+      } catch (err) {
+        console.error("CATEGORY ERROR:", err);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    const fetchFeatured = async () => {
+      try {
+        const featuredRes = await api.get("/products/featured");
+
         setFeatured(
           Array.isArray(featuredRes.data?.data)
             ? featuredRes.data.data
             : []
         );
-
-        setCategories(
-          Array.isArray(catRes.data?.data)
-            ? catRes.data.data
-            : []
-        );
-      })
-      .catch((err) => {
-        console.error("HOME PAGE ERROR:", err);
+      } catch (err) {
+        console.error("FEATURED ERROR:", err);
         setFeatured([]);
-        setCategories([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      } finally {
+        setFeaturedLoading(false);
+      }
+    };
+
+    // Both run independently.
+    fetchCategories();
+    fetchFeatured();
   }, []);
 
   return (
     <main className="overflow-hidden bg-white">
-
       {/* HERO */}
       <section className="relative overflow-hidden bg-[#0b1020] text-white">
-
         {/* Background decorations */}
         <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-indigo-600/25 blur-[120px]" />
         <div className="absolute -right-32 -top-20 h-[500px] w-[500px] rounded-full bg-fuchsia-500/20 blur-[140px]" />
         <div className="absolute bottom-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-violet-500/10 blur-[100px]" />
 
         <div className="relative mx-auto grid min-h-[610px] max-w-[1440px] items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8 lg:py-24">
-
           {/* Hero content */}
           <div className="mx-auto max-w-3xl text-center lg:mx-0 lg:text-left">
-
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-indigo-100 backdrop-blur-xl">
               <Sparkles className="h-4 w-4 text-pink-400" />
               Discover products from independent sellers
@@ -87,7 +121,6 @@ export default function HomePage() {
             </p>
 
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-
               <Link
                 href="/products"
                 className="group flex h-14 items-center gap-2 rounded-full bg-white px-7 text-sm font-extrabold text-gray-950 shadow-[0_15px_40px_rgba(255,255,255,0.15)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(255,255,255,0.22)]"
@@ -125,18 +158,16 @@ export default function HomePage() {
 
           {/* Hero visual */}
           <div className="relative mx-auto hidden w-full max-w-[520px] lg:block">
-
             <div className="absolute -inset-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-pink-500/20 blur-3xl" />
 
             <div className="relative rotate-2 rounded-[36px] border border-white/10 bg-white/[0.07] p-5 shadow-2xl backdrop-blur-2xl">
-
               <div className="rounded-[28px] border border-white/10 bg-white/[0.08] p-7">
-
                 <div className="mb-8 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-300">
                       Shopzuu Marketplace
                     </p>
+
                     <h3 className="mt-2 text-2xl font-black">
                       Find something special
                     </h3>
@@ -150,7 +181,9 @@ export default function HomePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-3xl bg-gradient-to-br from-indigo-500/30 to-indigo-500/10 p-5">
                     <PackageCheck className="mb-10 h-7 w-7 text-indigo-300" />
+
                     <p className="font-bold">Quality Products</p>
+
                     <p className="mt-1 text-xs text-slate-400">
                       From growing sellers
                     </p>
@@ -158,7 +191,9 @@ export default function HomePage() {
 
                   <div className="mt-7 rounded-3xl bg-gradient-to-br from-pink-500/30 to-pink-500/10 p-5">
                     <BadgePercent className="mb-10 h-7 w-7 text-pink-300" />
+
                     <p className="font-bold">Fair Prices</p>
+
                     <p className="mt-1 text-xs text-slate-400">
                       Better value for you
                     </p>
@@ -170,6 +205,7 @@ export default function HomePage() {
                     <p className="text-sm text-slate-400">
                       Ready to discover?
                     </p>
+
                     <p className="mt-1 font-bold">
                       Explore the marketplace
                     </p>
@@ -190,7 +226,6 @@ export default function HomePage() {
         {/* Trust strip */}
         <div className="relative border-t border-white/10 bg-white/[0.03]">
           <div className="mx-auto grid max-w-7xl grid-cols-1 divide-y divide-white/10 px-4 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-
             <TrustItem
               icon={<ShieldCheck className="h-5 w-5" />}
               title="Verified sellers"
@@ -215,7 +250,6 @@ export default function HomePage() {
       {/* CATEGORIES */}
       <section className="relative bg-[#fafafa] py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-
           <div className="mb-10 flex items-end justify-between gap-6">
             <div>
               <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.2em] text-indigo-600">
@@ -241,9 +275,9 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {loading ? (
+          {categoriesLoading && categories.length === 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[...Array(4)].map((_, i) => (
+              {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
                   className="h-36 animate-pulse rounded-3xl bg-gray-200"
@@ -289,11 +323,11 @@ export default function HomePage() {
       {/* FEATURED PRODUCTS */}
       <section className="bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-
           <div className="mb-10 flex items-end justify-between gap-5">
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-pink-500" />
+
                 <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-pink-600">
                   Handpicked for you
                 </p>
@@ -312,13 +346,19 @@ export default function HomePage() {
               href="/products"
               className="group flex shrink-0 items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-600 hover:shadow-md"
             >
-              <span className="hidden sm:inline">View all products</span>
-              <span className="sm:hidden">View all</span>
+              <span className="hidden sm:inline">
+                View all products
+              </span>
+
+              <span className="sm:hidden">
+                View all
+              </span>
+
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
 
-          {loading ? (
+          {featuredLoading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 lg:gap-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i}>
@@ -358,12 +398,10 @@ export default function HomePage() {
       {/* VENDOR CTA */}
       <section className="px-4 pb-20 pt-4 sm:px-6 sm:pb-24">
         <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[36px] bg-[#101525] px-6 py-14 text-white shadow-2xl sm:px-12 sm:py-16 lg:px-16">
-
           <div className="absolute -right-20 -top-24 h-80 w-80 rounded-full bg-indigo-600/30 blur-[100px]" />
           <div className="absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-pink-500/20 blur-[100px]" />
 
           <div className="relative flex flex-col items-start justify-between gap-10 lg:flex-row lg:items-center">
-
             <div className="max-w-2xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-indigo-200">
                 <Store className="h-4 w-4" />
